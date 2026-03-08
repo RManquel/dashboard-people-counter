@@ -1,0 +1,77 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: stadium_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stadium_db
+      POSTGRES_USER: stadium
+      POSTGRES_PASSWORD: stadium
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stadium -d stadium_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stadium_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://stadium:stadium@postgres:5432/stadium_db
+      ALLOWED_ORIGINS: '["http://localhost:5173","http://localhost","http://frontend"]'
+      APP_ENV: development
+      LOG_LEVEL: info
+      # Optional MQTT — uncomment if you have a broker:
+      # MQTT_BROKER_URL: mosquitto
+      # MQTT_PORT: 1883
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Frontend ────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: ""
+        VITE_WS_URL: ""
+        VITE_STADIUM_CAPACITY: "50000"
+    container_name: stadium_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ── Optional: MQTT broker ───────────────────────────────────────────
+  # mosquitto:
+  #   image: eclipse-mosquitto:2
+  #   container_name: stadium_mqtt
+  #   volumes:
+  #     - ./docker/mosquitto.conf:/mosquitto/config/mosquitto.conf
+  #   ports:
+  #     - "1883:1883"
+
+volumes:
+  postgres_data:
