@@ -1,7 +1,7 @@
 variable "project_name" {
   description = "Project name used as prefix for all resources"
   type        = string
-  default     = "stadium"
+  default     = "dashboard-stadium"
 }
 
 variable "environment" {
@@ -13,7 +13,7 @@ variable "environment" {
 variable "aws_region" {
   description = "AWS region to deploy to"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "vpc_cidr" {
@@ -31,13 +31,13 @@ variable "availability_zones" {
 variable "db_name" {
   description = "PostgreSQL database name"
   type        = string
-  default     = "stadium_db"
+  default     = "stadium"
 }
 
 variable "db_username" {
   description = "PostgreSQL master username"
   type        = string
-  default     = "stadium"
+  default     = "dashboard_user"
 }
 
 variable "db_password" {
@@ -49,7 +49,6 @@ variable "db_password" {
 variable "backend_image" {
   description = "Docker image URI for the FastAPI backend"
   type        = string
-  # e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/stadium-backend:latest
 }
 
 variable "frontend_image" {
